@@ -5,7 +5,7 @@ This fork of the original repository contains the code for reproducing the resul
 ## Note
 The code in the `spear-tools` submodule is subject to its own licenses. If not licensed, all rights remain with the original author (Imperial College London).
 
-The `FullSubNet` also subtree folder has separate licensing.
+The `FullSubNet` sub-repository also is third-party code and has separate licensing.
 
 ## Installation
 First `cd` into `./spear-tools` and set up the SPEAR paths and symbolic links and the conda environment according to `spear-tools/README.md`.
