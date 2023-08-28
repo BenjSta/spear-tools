@@ -16,7 +16,7 @@ A block diagram of the approach is shown in the following figure:
   <img src="assets/subfull_block_diagram.svg" alt="subfull block diagram" width="800" style="background-color: #FFFFFF;"/>
 </p>
 
-Model checkpoints are available [here](https://github.com/BenjSta/spear-tools/releases).
+Model checkpoints are available [here](https://drive.google.com/file/d/107Yryam40MQQ2yndP_LXVAC_NFqfPC6X/view?usp=sharing).
 
 ### Instructions
 The following instructions assume you have downloaded the datasets and configured the paths as described in the sections above.
