@@ -1,4 +1,6 @@
 import numpy as np
+import sys
+sys.path.append('spear-tools')
 from analysis.SPEAR import SPEAR_Data
 import parse
 import os
