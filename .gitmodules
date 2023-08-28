@@ -1,0 +1,3 @@
+[submodule "spear-tools"]
+	path = spear-tools
+	url = https://github.com/ImperialCollegeLondon/spear-tools

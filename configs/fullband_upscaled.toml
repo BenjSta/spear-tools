@@ -1,0 +1,42 @@
+fs = 16000
+
+processing_winlen = 508
+processing_hopsize = 254
+
+architecture = "Fullband"
+
+net_config.fullband_config.fsize_input = 255
+net_config.fullband_config.num_channels_encoder = [14, 64, 64, 64, 128, 256]
+net_config.fullband_config.num_channels_decoder = [[256, 128, 64, 64, 64, 1], [256, 128, 64, 64, 64, 1]] 
+net_config.fullband_config.num_decoders = 2
+net_config.fullband_config.kernel_size = [2, 3]
+net_config.fullband_config.fstride = 2
+net_config.fullband_config.n_gru_layers = 2
+net_config.fullband_config.n_gru_groups = 4
+net_config.fullband_config.nonlinearity = "ELU"
+net_config.fullband_config.output_nonlinearity = "Identity"
+net_config.fullband_config.batch_norm = false
+
+
+log_name = "fullband_upscaled"
+batch_size = 2
+learning_rates = [1e-4]
+learning_rate_epochs = [1]
+num_workers_loader = 8
+duration = 4
+resume = false
+num_epochs = 2500
+tensorboard_logdir = "/media/DATA/shared/stahl/spear_tools/trained_models/experiment3/logs/"
+checkpoint_dir = "/media/DATA/shared/stahl/spear_tools/trained_models/experiment3/checkpoints/"
+
+cost_function_alpha = 0
+cost_function_winlen = 400
+cost_function_hopsize = 200
+
+visible_cuda_devices = "1"
+device = "cuda:0"
+
+validation_only = false
+validate_every = 50
+validation_num_audio_samples = 20
+validation_seed = 1

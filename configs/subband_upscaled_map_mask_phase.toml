@@ -1,0 +1,39 @@
+fs = 16000
+
+processing_winlen = 508
+processing_hopsize = 254
+
+architecture = "Subband"
+
+net_config.subband_config.num_input_channels = 14
+net_config.subband_config.num_channels = 85
+net_config.subband_config.num_decoders = 2
+net_config.subband_config.num_output_channels = [2, 2]
+net_config.subband_config.depth = 5
+net_config.subband_config.num_recurrent_layers = 2
+net_config.subband_config.nonlinearity = "ELU"
+net_config.subband_config.kernel_size = [1, 5]
+net_config.subband_config.output_nonlinearity = "ELU"
+
+log_name = "subband_upscaled_map_mask_phase"
+batch_size = 2
+learning_rates = [1e-4]
+learning_rate_epochs = [1]
+num_workers_loader = 8
+duration = 4
+resume = false
+num_epochs = 2500
+tensorboard_logdir = "/media/DATA/shared/stahl/spear_tools/trained_models/experiment3/logs"
+checkpoint_dir = "/media/DATA/shared/stahl/spear_tools/trained_models/experiment3/checkpoints"
+
+cost_function_alpha = 0
+cost_function_winlen = 400
+cost_function_hopsize = 200
+
+visible_cuda_devices = "1"
+device = "cuda:0"
+
+validation_only = false
+validate_every = 50
+validation_num_audio_samples = 20
+validation_seed = 1

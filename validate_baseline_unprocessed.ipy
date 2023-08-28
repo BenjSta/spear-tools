@@ -1,0 +1,168 @@
+VAL_SEGMENTS_FILE = 'spear-tools/analysis/segments_Dev.csv'
+PROC_METHOD = 'baseline'  # one of ['baseline', 'unprocessed']
+METRICS = ['SI-SDR', 'PESQ']  # choice of metrics to run
+WRITE_PROCESSED_AUDIO = False
+
+import sys
+sys.path.append('./spear-tools/')
+
+import os
+import numpy as np
+import soundfile
+import tqdm
+import glob
+import pandas as pd
+import parse
+from analysis.Processor import SPEAR_Processor
+from analysis.spear_evaluate import compute_metrics
+from torch.utils.data import DataLoader
+import soundfile
+from dataset import SpearDataset
+import scipy.signal
+from joblib import Parallel, delayed
+
+
+if WRITE_PROCESSED_AUDIO:
+    processed_audio_dir = (
+        "processed_val_audio_" + PROC_METHOD
+    )
+    os.mkdir(processed_audio_dir)
+
+# Setting up columns for metric matrix
+isMBSTOI = 'MBSTOI' in METRICS
+if isMBSTOI:
+    METRICS.remove('MBSTOI')
+side_str = ['L', 'R']
+# 'cols' are the name of columns in metric matrix
+cols = [
+    '%s (%s)' % (x, y) for x in METRICS for y in side_str
+]  # creating 2x (Left & Right) mono-based metric
+if isMBSTOI:
+    cols.insert(0, 'MBSTOI')  # stereo-based metric
+cols_csv = ['global_index', 'file_name', 'chunk_index'] + cols
+
+pathlist_vds2 = glob.glob(
+    'spear-tools/analysis/spear_data/Extra/Dev/Dataset_2/Reference_Audio/*/*/ref_*.wav'
+)
+pathlist_vds3 = glob.glob(
+    'spear-tools/analysis/spear_data/Extra/Dev/Dataset_3/Reference_Audio/*/*/ref_*.wav'
+)
+pathlist_vds4 = glob.glob(
+    'spear-tools/analysis/spear_data/Extra/Dev/Dataset_4/Reference_Audio/*/*/ref_*.wav'
+)
+vflist = sorted(
+    [os.path.split(p)[-1][4:-4] for p in pathlist_vds2 + pathlist_vds3 + pathlist_vds4]
+)
+
+print('val set size: %d minutes' % len(vflist))
+
+num_workers_loader = 8
+hopsize_secs = SPEAR_Processor.stft_params['stepL']
+vds_full = SpearDataset(
+    'spear-tools/analysis/spear_data/Main/Dev', vflist, 60, hopsize_secs, 0.0, 0.0, 48000
+)
+vdl_full = DataLoader(
+    vds_full,
+    1,
+    shuffle=False,
+    num_workers=num_workers_loader,
+    drop_last=False,
+    prefetch_factor=num_workers_loader,
+)
+
+fs = vds_full.fs
+processor = SPEAR_Processor(vds_full.sp.get_all_AIRs(), fs, out_chan=[5, 6])
+
+assert processor.stft_params['stepL'] == hopsize_secs
+
+segments = pd.read_csv(VAL_SEGMENTS_FILE)
+
+
+def enhance_generator():
+    for val_dataset_index, val_sample in enumerate(vdl_full):
+        # torch.cuda.empty_cache()
+        (
+            x_noisy,
+            x_ref,
+            doa,
+            rms,
+        ) = val_sample
+        x_noisy = x_noisy[0, ...].detach().cpu().numpy()
+        x_ref = x_ref[0, ...].detach().cpu().numpy()
+        doa = doa[0, ...].detach().cpu().numpy()
+        doa = np.pi / 180 * doa
+        rms = rms[0, ...].detach().cpu().numpy()
+        filename = vflist[val_dataset_index]
+
+        if PROC_METHOD == 'baseline':
+            enh = processor.process_signal(x_noisy.T, target_doa=doa)
+            enh = enh.T
+
+        elif PROC_METHOD == 'unprocessed':
+            enh = x_noisy[:, -2:].copy()
+
+        if fs != vds_full.fs:
+            x_proc = scipy.signal.resample_poly(enh, vds_full.fs, fs, axis=0)
+        else:
+            x_proc = enh.copy()
+
+        if WRITE_PROCESSED_AUDIO:
+            soundfile.write(
+                os.path.join(processed_audio_dir, filename + '.wav'), x_proc, fs
+            )
+
+        yield filename, x_proc, x_ref
+
+
+def val_metrics(filename, x_proc, x_ref):
+    info = parse.parse('D{}_S{}_M{}_ID{}', filename)
+    dataset = int(info[0])
+    session = int(info[1])
+    minute = int(info[2])
+    target_id = int(info[3])
+
+    segments_for_file = segments[segments['dataset'] == ('D%d' % dataset)]
+    segments_for_file = segments_for_file[segments_for_file['session'] == session]
+    segments_for_file = segments_for_file[segments_for_file['minute'] == minute]
+    segments_for_file = segments_for_file[segments_for_file['target_ID'] == target_id]
+
+    # Loop through chunks
+    metric_vals_df_list = []
+    nSeg = len(segments_for_file)
+
+    for n in range(nSeg):
+        seg = segments_for_file.iloc[n]
+        dataset = int(seg['dataset'][1])  # intseg['dataset'][1]) # integer
+        session = seg['session']  # integer
+        minute = seg['minute']  # integer
+        file_name = seg['file_name']  # was original EasyCom name e.g. 01-00-288, now vad_
+
+        sample_start = int((seg['sample_start'] - 1) * vds_full.fs / 48000)
+        sample_stop = int((seg['sample_stop'] - 1) * vds_full.fs / 48000)
+
+        # get chunk info
+        chunk_info = [seg['global_index'], file_name, seg['chunk_index']]
+
+        x_proc_seg = x_proc[sample_start : sample_stop + 1, :]
+        x_ref_seg = x_ref[sample_start : sample_stop + 1, :]
+
+        scores = compute_metrics(x_proc_seg, x_ref_seg, vds_full.fs, cols)
+        metric_vals_df_list.append(
+            pd.DataFrame([chunk_info + scores], columns=cols_csv)
+        )
+
+    if len(metric_vals_df_list) > 0:
+        metric_vals_df = pd.concat(metric_vals_df_list)
+    else:
+        metric_vals_df = pd.DataFrame([], columns=cols_csv)
+    return metric_vals_df
+
+
+eg = enhance_generator()
+metric_dataframes_costs_filenames = Parallel(n_jobs=8)(
+    delayed(val_metrics)(*tup) for tup in tqdm.tqdm(eg, total=vds_full.__len__())
+)
+
+full_metrics = pd.concat(metric_dataframes_costs_filenames)
+
+full_metrics.to_csv('metrics_' + PROC_METHOD + '.csv')

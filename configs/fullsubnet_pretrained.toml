@@ -1,0 +1,6 @@
+fs = 16000
+
+processing_winlen = 508
+processing_hopsize = 254
+
+architecture = "MaxDirAndFullsubnet"

@@ -1,0 +1,1 @@
+Convenience folder to put model checkpoints for inference/validation.
