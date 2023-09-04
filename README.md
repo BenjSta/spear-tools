@@ -1,6 +1,6 @@
 # Multichannel Subband-Fullband Gated Convolutional Recurrent Neural Network For Direction-Based Speech Enhancement With Head-Mounted Microphone Arrays
 
-This fork of the original repository contains the code for reproducing the results shown in the paper "Multichannel Subband-Fullband Gated Convolutional Recurrent Neural Network For Direction-Based Speech Enhancement With Head-Mounted Microphone Arrays". Please find a preprint [here](https://users.iem.at/stahl/uploads/preprint_waspaa23.pdf). 
+This repository contains the code for reproducing the results shown in the paper "Multichannel Subband-Fullband Gated Convolutional Recurrent Neural Network For Direction-Based Speech Enhancement With Head-Mounted Microphone Arrays". Please find a preprint [here](https://users.iem.at/stahl/uploads/preprint_waspaa23.pdf). 
 
 ## Note
 The code in the `spear-tools` submodule is subject to its own licenses. If not licensed, all rights remain with the original author (Imperial College London).
