@@ -54,7 +54,7 @@ vflist_reduced = vflist#np.random.choice(vflist, size=10, replace=False)
 validation_audio_samples_full = np.random.choice(vflist_reduced, size=validation_num_audio_samples, replace=False)
 np.random.seed()
 
-ds = SpearDataset('analysis/spear_data/Main/Train', flist, duration, processing_hopsize / fs, 0.7, 0.6, fs)
+ds = SpearDataset('spear-tools/analysis/spear_data/Main/Train', flist, duration, processing_hopsize / fs, 0.7, 0.6, fs)
 dl = DataLoader(ds, batch_size, shuffle=True, num_workers = num_workers_loader, drop_last=True)
 
 #%%
@@ -70,19 +70,13 @@ for batch in tqdm.tqdm(dl):
     rms = rms.to('cuda')
     feats.append(model(noisy, doa).detach().cpu().numpy())
 # %%
-compression = 0.3
 var_all = []
 mean_abs_all = []
 for f in tqdm.tqdm(feats):
-    var_all.append(np.mean((np.abs(f)**compression)**2, axis=(1, 3)))
-    mean_abs_all.append(np.mean((np.abs(f)**compression), axis=(1, 3)))
+    var_all.append(np.mean(np.abs(f)**2, axis=(1, 3)))
+    mean_abs_all.append(np.mean(np.abs(f)), axis=(1, 3))
 
-#%%
-var_all_fi = []
-mean_abs_all_fi = []
-for f in tqdm.tqdm(feats):
-    var_all_fi.append(np.mean(np.abs(f)**2, axis=(1, 2, 3)))
-    mean_abs_all_fi.append(np.mean(np.abs(f), axis=(1, 2, 3)))
+
 
 
 # %%
@@ -95,14 +89,6 @@ mean_abs = np.mean(mean_abs_all, axis=0)
 std = np.sqrt(var_mean)
 
 # %%
-var_all_fi = np.concatenate(var_all_fi, axis=0)
-mean_abs_all_fi = np.concatenate(mean_abs_all_fi, axis=0)
-
-#%%
-std_fi = np.sqrt(np.mean(var_all_fi) / 2)
-mean_abs_fi = np.mean(mean_abs_all)
-
-# %%
-np.save('laplace_sigma_fs%g_blk%d_compressed%g.npy'%(fs, processing_winlen, compression), mean_abs)
-np.save('gaussian_sigma_fs%g_blk%d_compressed%g.npy'%(fs, processing_winlen, compression), std)
+np.save('laplace_sigma_fs%g_blk%d.npy'%(fs, processing_winlen), mean_abs)
+np.save('gaussian_sigma_fs%g_blk%d.npy'%(fs, processing_winlen), std)
 # %%
