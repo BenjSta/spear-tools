@@ -1,11 +1,12 @@
 import numpy as np
 import torch
+import sys
 from models.torch_sigproc import (
     MultichannelISTFTLayer,
     MultichannelSTFTLayer,
     sqrt_hann_win_fn,
 )
-from models.conv_recurrent import GCRN, IGCRN
+sys.path.append('./spear-tools/')
 from analysis.Processor import SPEAR_Processor
 import sys
 import FullSubNet.recipes.dns_interspeech_2020.inferencer as fullsub_inf
