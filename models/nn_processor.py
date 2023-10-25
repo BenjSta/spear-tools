@@ -11,6 +11,7 @@ from analysis.Processor import SPEAR_Processor
 import sys
 import FullSubNet.recipes.dns_interspeech_2020.inferencer as fullsub_inf
 import toml
+from models.conv_recurrent import GCRN, IGCRN
 
 
 class FeatureExtractorMatchedFilterMaxDir(torch.nn.Module, SPEAR_Processor):
